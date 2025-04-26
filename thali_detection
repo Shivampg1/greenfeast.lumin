@@ -6,10 +6,8 @@ from ultralytics import YOLO
 import qrcode
 import time
 
-# Initialize YOLO model (replace with your custom food model)
 model = YOLO("yolov8n.pt")  
 
-# Food density estimates (grams per pixel)
 FOOD_DENSITY = {
     "rice": 0.02,
     "roti": 0.03,
@@ -45,7 +43,6 @@ def calculate_waste(initial_weights, current_frame):
             pixel_area = (x2 - x1) * (y2 - y1)
             current_weight = estimate_weight(food_class, pixel_area)
             
-            # Calculate wasted amount
             wasted = max(0, initial_weights.get(food_class, 0) - current_weight)
             if wasted > 0:
                 fine = wasted * 0.10  # ₹0.10 per gram
@@ -54,15 +51,12 @@ def calculate_waste(initial_weights, current_frame):
                     'wasted_g': wasted,
                     'fine': fine
                 }
-                
-                # Draw warning
                 cv2.putText(current_frame, f"WASTED: {wasted:.1f}g", 
                            (x1, y1 - 30), cv2.FONT_HERSHEY_SIMPLEX, 
                            0.6, (0, 0, 255), 2)
     
     return current_frame, waste_data, total_fine
 
-# Main loop
 print("👉 Press 's' to scan initial thali, 'q' to quit")
 initial_weights = {}
 
@@ -72,8 +66,7 @@ while True:
         break
     
     key = cv2.waitKey(1)
-    
-    # 1. Capture initial thali weights
+
     if key == ord('s'):
         results = model(frame)
         initial_weights = {}
@@ -84,16 +77,13 @@ while True:
                 initial_weights[food_class] = estimate_weight(food_class, (x2-x1)*(y2-y1))
         print("✅ Initial thali scanned. Start eating...")
     
-    # 2. Real-time monitoring
     elif initial_weights:  # Only check after initial scan
         frame, waste_data, total_fine = calculate_waste(initial_weights, frame.copy())
         
-        # Generate QR if waste detected
         if total_fine > 0 and key == ord('f'):
             qr = generate_upi_qr(round(total_fine, 2))
             cv2.imshow("QR Code", cv2.imread(f"fine_qr_{round(total_fine, 2)}.png"))
     
-    # Display live feed
     cv2.imshow("Thali Monitoring System", frame)
     
     if key == ord('q'):
