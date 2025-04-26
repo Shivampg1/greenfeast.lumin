@@ -1,0 +1,105 @@
+from flask import Flask, render_template, jsonify
+import json
+
+app = Flask(__name__)
+
+# This will hold the total food waste data
+total_food_waste = {
+    "total_waste": 0
+}
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/update_waste/<int:waste>', methods=['POST'])
+def update_waste(waste):
+    total_food_waste["total_waste"] += waste
+    return jsonify(total_food_waste)
+
+@app.route('/get_waste', methods=['GET'])
+def get_waste():
+    return jsonify(total_food_waste)
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+
+
+      #html code
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Waste Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        canvas {
+            max-width: 600px;
+            margin: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Food Waste Dashboard</h1>
+    <canvas id="wasteChart"></canvas>
+    <h2>Total Food Waste: <span id="totalWaste">0</span> grams</h2>
+
+    <script>
+        const ctx = document.getElementById('wasteChart').getContext('2d');
+        const wasteChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Total Waste'],
+                datasets: [{
+                    label: 'Food Waste (grams)',
+                    data: [0],
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        function updateWasteDisplay(totalWaste) {
+            document.getElementById('totalWaste').innerText = totalWaste;
+            wasteChart.data.datasets[0].data[0] = totalWaste;
+            wasteChart.update();
+        }
+
+        // Fetch initial waste data
+        fetch('/get_waste')
+            .then(response => response.json())
+            .then(data => {
+                updateWasteDisplay(data.total_waste);
+            });
+
+        // Example of updating waste (you can call this function when food waste is detected)
+        function addWaste(waste) {
+            fetch(`/update_waste/${waste}`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    updateWasteDisplay(data.total_waste);
+                });
+        }
+
+        // Simulate adding waste for demonstration (remove this in production)
+        setInterval(() => {
+            addWaste(Math.floor(Math.random() * 100)); // Random waste for testing
+        }, 5000);
+    </script>
+</body>
+</html>
+      
